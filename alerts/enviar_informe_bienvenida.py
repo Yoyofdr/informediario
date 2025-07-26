@@ -24,6 +24,12 @@ def enviar_informe_bienvenida(email_destinatario, nombre_destinatario):
         bool: True si se envió correctamente, False en caso contrario
     """
     
+    # Verificar si es domingo
+    if datetime.now().weekday() == 6:
+        print(f"=== NO SE ENVÍA INFORME A {email_destinatario} PORQUE ES DOMINGO ===\n")
+        # Enviar correo de bienvenida sin informe
+        return enviar_correo_bienvenida_sin_informe(email_destinatario, nombre_destinatario)
+    
     fecha = datetime.now().strftime("%d-%m-%Y")
     
     print(f"=== ENVIANDO INFORME INTEGRADO A NUEVO USUARIO {email_destinatario} ===\n")
@@ -77,6 +83,121 @@ def enviar_informe_bienvenida(email_destinatario, nombre_destinatario):
         # Restaurar el email original en caso de error
         if 'original_email' in locals():
             os.environ['EMAIL_TO'] = original_email
+        return False
+
+
+def enviar_correo_bienvenida_sin_informe(email_destinatario, nombre_destinatario):
+    """
+    Envía solo un correo de bienvenida sin el informe (para domingos)
+    """
+    try:
+        # Formatear fecha actual
+        fecha_obj = datetime.now()
+        meses = {
+            1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
+            5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
+            9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
+        }
+        fecha_formato = f"{fecha_obj.day} de {meses[fecha_obj.month]}, {fecha_obj.year}"
+        
+        # Crear mensaje HTML de bienvenida
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {{
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    background-color: #f5f5f5;
+                    margin: 0;
+                    padding: 20px;
+                }}
+                .container {{
+                    max-width: 600px;
+                    margin: 0 auto;
+                    background-color: white;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    padding: 40px;
+                }}
+                h1 {{
+                    color: #0369a1;
+                    margin-bottom: 20px;
+                }}
+                p {{
+                    color: #333;
+                    line-height: 1.6;
+                    margin-bottom: 15px;
+                }}
+                .footer {{
+                    margin-top: 40px;
+                    padding-top: 20px;
+                    border-top: 1px solid #e5e5e5;
+                    color: #666;
+                    font-size: 14px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>¡Bienvenido a Informe Diario, {nombre_destinatario}!</h1>
+                
+                <p>
+                    Gracias por registrarte en nuestro servicio de informes diarios.
+                </p>
+                
+                <p>
+                    A partir de mañana lunes, recibirás cada día (de lunes a sábado) a las 8:00 AM 
+                    un resumen con lo más relevante del:
+                </p>
+                
+                <ul>
+                    <li><strong>Diario Oficial:</strong> Normas generales, particulares y avisos destacados</li>
+                    <li><strong>CMF:</strong> Hechos esenciales del mercado financiero</li>
+                    <li><strong>SII:</strong> Publicaciones y normativas tributarias</li>
+                </ul>
+                
+                <p>
+                    <em>Nota: No enviamos informes los domingos, por lo que hoy no recibirás el informe diario. 
+                    Tu primer informe llegará el próximo día hábil.</em>
+                </p>
+                
+                <div class="footer">
+                    <p>
+                        Si tienes alguna pregunta o necesitas ayuda, no dudes en contactarnos.
+                    </p>
+                    <p>
+                        Saludos cordiales,<br>
+                        El equipo de Informe Diario
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Enviar email
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = f"¡Bienvenido a Informe Diario!"
+        msg['From'] = "rodrigo@carvuk.com"
+        msg['To'] = email_destinatario
+        
+        html_part = MIMEText(html_content, 'html')
+        msg.attach(html_part)
+        
+        # Enviar
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login("rodrigo@carvuk.com", "swqjlcwjaoooyzcb")
+        server.send_message(msg)
+        server.quit()
+        
+        print(f"✅ Correo de bienvenida enviado a {email_destinatario} (sin informe por ser domingo)")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error enviando correo de bienvenida: {str(e)}")
         return False
 
 

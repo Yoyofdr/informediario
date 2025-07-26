@@ -11,6 +11,13 @@ logging.basicConfig(filename='scheduler.log', level=logging.INFO, format='%(asct
 def job(task_name, command_name):
     """Ejecuta un comando de Django y registra la hora."""
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Verificar si es domingo (weekday() devuelve 6 para domingo)
+    if datetime.datetime.now().weekday() == 6 and command_name == 'informe_diario_oficial':
+        print(f"[{current_time}] Omitiendo tarea '{task_name}' porque es domingo.")
+        logging.info(f"Omitiendo tarea '{task_name}' porque es domingo.")
+        return
+    
     print(f"[{current_time}] Iniciando tarea: '{task_name}'...")
     logging.info(f"Iniciando tarea: '{task_name}'...")
     try:
