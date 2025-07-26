@@ -148,7 +148,7 @@ def enviar_correo_bienvenida_sin_informe(email_destinatario, nombre_destinatario
                 </p>
                 
                 <p>
-                    A partir de mañana lunes, recibirás cada día (de lunes a sábado) a las 8:00 AM 
+                    A partir de mañana lunes, recibirás cada día (de lunes a sábado) a las 9:00 AM 
                     un resumen con lo más relevante del:
                 </p>
                 

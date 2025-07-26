@@ -16,6 +16,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib import messages
 from alerts.utils.db_optimizations import optimize_empresa_queries, optimize_hecho_esencial_queries, optimize_metrics_queries, QueryOptimizer
+from .enviar_informe_bienvenida import enviar_informe_bienvenida
 
 @login_required
 def suscripcion_ajax(request):
@@ -62,6 +63,19 @@ def register(request):
         if form.is_valid():
             user = form.save()
             auth_login(request, user)
+            
+            # Enviar informe de bienvenida
+            try:
+                nombre_completo = f"{user.first_name} {user.last_name}".strip()
+                if not nombre_completo:
+                    nombre_completo = user.username
+                
+                enviar_informe_bienvenida(user.email, nombre_completo)
+                messages.success(request, 'Te hemos enviado el informe del Diario Oficial de hoy por email.')
+            except Exception as e:
+                print(f"Error enviando informe de bienvenida: {e}")
+                # No mostrar error al usuario para no afectar la experiencia de registro
+            
             return redirect('alerts:dashboard')
     else:
         form = CustomUserCreationForm()
@@ -114,7 +128,15 @@ def landing(request):
             if org:
                 destinatario.organizacion = org
                 destinatario.save()
-                mensaje = f"Registro exitoso. Te hemos agregado a la lista de destinatarios."
+                
+                # Enviar informe de bienvenida
+                try:
+                    enviar_informe_bienvenida(destinatario.email, destinatario.nombre)
+                    mensaje = f"Registro exitoso. Te hemos agregado a la lista de destinatarios y enviado el informe de hoy por email."
+                except Exception as e:
+                    print(f"Error enviando informe de bienvenida: {e}")
+                    mensaje = f"Registro exitoso. Te hemos agregado a la lista de destinatarios."
+                
                 messages.success(request, mensaje)
                 form = DestinatarioForm()  # Limpiar el form
             else:
@@ -152,7 +174,15 @@ def panel_organizacion(request):
                 destinatario.nombre = f"{nombre} {apellido}".strip()
                 destinatario.organizacion = organizacion
                 destinatario.save()
-                messages.success(request, f"Destinatario {form.cleaned_data['email']} agregado.")
+                
+                # Enviar informe de bienvenida al nuevo destinatario
+                try:
+                    enviar_informe_bienvenida(destinatario.email, destinatario.nombre)
+                    messages.success(request, f"Destinatario {form.cleaned_data['email']} agregado y se le envió el informe de hoy.")
+                except Exception as e:
+                    print(f"Error enviando informe de bienvenida: {e}")
+                    messages.success(request, f"Destinatario {form.cleaned_data['email']} agregado.")
+                
                 form = DestinatarioForm(organizacion=organizacion)
             # else:
             #     messages.error(request, 'Por favor, corrige los errores del formulario.')
@@ -187,7 +217,16 @@ def registro_empresa_admin(request):
                 dominio=email_dominio,
                 admin=user
             )
-            messages.success(request, 'Registro exitoso. Ahora puedes iniciar sesión.')
+            
+            # Enviar informe de bienvenida
+            try:
+                nombre_completo = f"{user.first_name} {user.last_name}".strip()
+                enviar_informe_bienvenida(user.email, nombre_completo)
+                messages.success(request, 'Registro exitoso. Te hemos enviado el informe del Diario Oficial de hoy. Ahora puedes iniciar sesión.')
+            except Exception as e:
+                print(f"Error enviando informe de bienvenida: {e}")
+                messages.success(request, 'Registro exitoso. Ahora puedes iniciar sesión.')
+            
             return render(request, 'alerts/registro_exitoso.html', {'empresa': org})
         else:
             messages.error(request, 'Por favor, corrige los errores del formulario.')
@@ -273,13 +312,27 @@ def registro_prueba(request):
                     dominio=dominio,
                     admin=user
                 )
+                # Enviar informe de bienvenida al admin
+                try:
+                    nombre_completo = f"{nombre} {apellido}".strip()
+                    enviar_informe_bienvenida(email, nombre_completo)
+                except Exception as e:
+                    print(f"Error enviando informe de bienvenida al admin: {e}")
+                
+                # Crear destinatarios y enviarles informes de bienvenida
                 for dest_email in destinatarios:
-                    Destinatario.objects.create(
+                    dest = Destinatario.objects.create(
                         nombre=f"{nombre} {apellido}",  # Usar el nombre del admin como placeholder
                         email=dest_email,
                         organizacion=org
                     )
-                messages.success(request, 'Registro exitoso. Ya puedes iniciar sesión y usar la plataforma gratis.')
+                    # Enviar informe de bienvenida a cada destinatario
+                    try:
+                        enviar_informe_bienvenida(dest_email, dest.nombre)
+                    except Exception as e:
+                        print(f"Error enviando informe de bienvenida a {dest_email}: {e}")
+                
+                messages.success(request, 'Registro exitoso. Te hemos enviado el informe del Diario Oficial de hoy a ti y a todos los destinatarios registrados. Ya puedes iniciar sesión y usar la plataforma gratis.')
                 return render(request, 'alerts/registro_exitoso.html', {'empresa': org})
         else:
             messages.error(request, 'Por favor, corrige los errores del formulario.')
